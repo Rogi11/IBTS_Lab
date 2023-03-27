@@ -49,14 +49,12 @@ int main()
 		cout << "Чтение данных выполнено с ошибкой" << endl;
 		return 3;
 	}
-	CloseHandle(fileHandle);
-	return 0;
 #pragma pack (push,1)
 	typedef struct
-	{	
+	{
 		BYTE jmp[3];
 		BYTE Identifier[8]; //Идентификатор фирмы-изготовителя
-		BYTE BytePerSector[2]; //Число байт в секторе
+		BYTE SectorFactor[2]; //Число байт в секторе
 		BYTE SectorPerCluster[1]; //Число секторов в кластере
 		BYTE RsvdSecCount[2]; //Число резервных секторов
 		BYTE CountFAT[1];
@@ -76,4 +74,9 @@ int main()
 	} FAT32_BootRecord;
 #pragma pack(pop)
 	FAT32_BootRecord* pBootRecord;
+	pBootRecord = (FAT32_BootRecord*)dataBuffer;
+	cout << pBootRecord->Identifier << endl;
+	
+	CloseHandle(fileHandle);
+	return 0;
 }
