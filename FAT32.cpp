@@ -51,4 +51,29 @@ int main()
 	}
 	CloseHandle(fileHandle);
 	return 0;
+#pragma pack (push,1)
+	typedef struct
+	{	
+		BYTE jmp[3];
+		BYTE Identifier[8]; //Идентификатор фирмы-изготовителя
+		BYTE BytePerSector[2]; //Число байт в секторе
+		BYTE SectorPerCluster[1]; //Число секторов в кластере
+		BYTE RsvdSecCount[2]; //Число резервных секторов
+		BYTE CountFAT[1];
+		BYTE NumberFileDescr[2];
+		BYTE TotalSec[2];
+		BYTE MediaType[1];
+		BYTE CountSectorFAT[2];
+		BYTE HiddenSectors[4];
+		BYTE NumberOfSectorsPerTrack[2];
+		BYTE NumberOfWorkingSurfaces[2];
+		BYTE TotalSec32[4];
+		BYTE FATSz32[4];
+		BYTE ActiveFATNumber[4];
+		BYTE RootCluster[4];
+		BYTE FSINFO[2];
+		BYTE BkBootSec[2];
+	} FAT32_BootRecord;
+#pragma pack(pop)
+	FAT32_BootRecord* pBootRecord;
 }
