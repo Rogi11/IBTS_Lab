@@ -53,29 +53,30 @@ int main()
 	typedef struct
 	{
 		BYTE jmp[3];
-		BYTE Identifier[8]; //Идентификатор фирмы-изготовителя
-		BYTE SectorFactor[2]; //Число байт в секторе
-		BYTE SectorPerCluster[1]; //Число секторов в кластере
-		BYTE RsvdSecCount[2]; //Число резервных секторов
-		BYTE CountFAT[1];
-		BYTE NumberFileDescr[2];
-		BYTE TotalSec[2];
-		BYTE MediaType[1];
-		BYTE CountSectorFAT[2];
-		BYTE HiddenSectors[4];
-		BYTE NumberOfSectorsPerTrack[2];
-		BYTE NumberOfWorkingSurfaces[2];
-		BYTE TotalSec32[4];
-		BYTE FATSz32[4];
-		BYTE ActiveFATNumber[4];
-		BYTE RootCluster[4];
-		BYTE FSINFO[2];
-		BYTE BkBootSec[2];
+		BYTE Identifier[8]; // Идентификатор фирмы-изготовителя
+		UINT16 SectorFactor; // Число байт в секторе
+		UINT8 SectorPerCluster; // Число секторов в кластере
+		UINT16 RsvdSecCount; // Число резервных секторов
+		UINT8 CountFAT; // Число таблиц(копий) FAT
+		UINT16 NumberFileDescr; // Количество 32-байтных дескрипторов
+		UINT16 TotalSec; // Общее число секторов в разделе
+		UINT8 MediaType; // Тип носителя
+		UINT16 CountSectorFAT; // Поле содержит количество секторов, занимаемых одной копией FAT
+		UINT16 NumberOfSectorsPerTrack; // Число секторов на дорожке
+		UINT16 NumberOfWorkingSurfaces; // Число рабочих поверхностей
+		UINT32 HiddenSectors; // Число скрытых секторов перед разделом
+		UINT32 TotalSec32; //Общее число секторов в разделе.
+		UINT32 FATSz32; // Размер одной таблицы FAT в секторах
+		UINT32 ActiveFATNumber; // Номер активной таблицы факт
+		UINT32 RootCluster; // Кластер корневого каталога
+		UINT16 FSINFO; // Номер сектора структуры FSINFO
+		UINT16 BkBootSec; // Сектор LBA резевной копии данной записи
+		BYTE Reserved[30];
+		BYTE FilSysType[8]; // Тип файловой системы
 	} FAT32_BootRecord;
 #pragma pack(pop)
 	FAT32_BootRecord* pBootRecord;
 	pBootRecord = (FAT32_BootRecord*)dataBuffer;
-	cout << pBootRecord->Identifier << endl;
 	
 	CloseHandle(fileHandle);
 	return 0;
