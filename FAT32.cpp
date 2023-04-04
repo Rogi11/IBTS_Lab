@@ -1,6 +1,19 @@
 ﻿#include <iostream>
 #include <Windows.h>
 using namespace std;
+void ReadCluster(HANDLE fileHandle) {
+	ULONGLONG startOffset = 0x0;
+	cout << "Введите какой кластер необходимо считать" << endl;
+	cin >> startOffset;
+	LARGE_INTEGER sectorOffset;
+	sectorOffset.QuadPart = startOffset;
+	unsigned long currentPosition = SetFilePointer(
+		fileHandle,
+		sectorOffset.LowPart,
+		&sectorOffset.HighPart,
+		FILE_BEGIN // Точка в файле, относительно которой необходимо позиционироваться (FILE_BEGIN, FILE_CURRENT, FILE_END)
+	);
+}
 int main()
 {
     setlocale(LC_ALL, "Russian");
@@ -17,26 +30,12 @@ int main()
 	if (fileHandle == INVALID_HANDLE_VALUE)
 	{
 		cout << "Ошибка чтения диска" << endl;
+		CloseHandle(fileHandle);
 		return 1;
 	}
 	BYTE dataBuffer[512];
-	ULONGLONG startOffset = 0x0;
 	DWORD bytesToRead = 512;
 	DWORD bytesRead;
-	LARGE_INTEGER sectorOffset;
-	sectorOffset.QuadPart = startOffset;
-	unsigned long currentPosition = SetFilePointer(
-		fileHandle,
-		sectorOffset.LowPart,
-		&sectorOffset.HighPart,
-		FILE_BEGIN // Точка в файле, относительно которой необходимо позиционироваться (FILE_BEGIN, FILE_CURRENT, FILE_END)
-	);
-
-	if (currentPosition != sectorOffset.LowPart)
-	{
-		cout << "Курсор не установлен в начале" << endl;
-		return 2;
-	}
 	bool readResult = ReadFile(
 		fileHandle,
 		dataBuffer,
@@ -47,7 +46,8 @@ int main()
 	if (!readResult || bytesRead != bytesToRead)
 	{
 		cout << "Чтение данных выполнено с ошибкой" << endl;
-		return 3;
+		CloseHandle(fileHandle);
+		return 2;
 	}
 #pragma pack (push,1)
 	typedef struct
@@ -77,7 +77,14 @@ int main()
 #pragma pack(pop)
 	FAT32_BootRecord* pBootRecord;
 	pBootRecord = (FAT32_BootRecord*)dataBuffer;
-	
+	cout << "Тип файловой системы: " << pBootRecord->FilSysType << endl;
+	cout << "Количество секторов в разделе: " << pBootRecord->TotalSec32 << endl;
+	cout << "Количество байт в секторе: " << pBootRecord->SectorFactor << endl;
+	cout << "Количество секторов в кластере:" << int(pBootRecord->SectorPerCluster) << endl;
+	cout << "Число резервных секторов:" << pBootRecord->RsvdSecCount << endl;
+	cout << "Тип носителя:" << int(pBootRecord->MediaType) << endl;
+	cout << "Число таблиц(копий) FAT:" << int(pBootRecord->CountFAT) << endl;
+
 	CloseHandle(fileHandle);
 	return 0;
 }
