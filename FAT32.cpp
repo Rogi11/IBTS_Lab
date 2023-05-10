@@ -4,17 +4,15 @@
 #include <iomanip>
 #include <cmath>
 using namespace std;
-void ReadCluster(HANDLE fileHandle, BYTE dataBuffer[], int ClusterSize) {
-	ULONGLONG startOffset = 0x0;
-	DWORD bytesRead;
-	cout << "Введите какой кластер необходимо считать" << endl;
-	cin >> startOffset;
+
+void ReadCluster(HANDLE fileHandle, BYTE Buffer[], int NumberCluster, int ClusterSize, int startOffset) {
 	LARGE_INTEGER sectorOffset;
-	sectorOffset.QuadPart = startOffset;
+	sectorOffset.QuadPart = (__int64)startOffset + (__int64)NumberCluster * (__int64)ClusterSize;
 	unsigned long currentPosition = SetFilePointer(fileHandle, sectorOffset.LowPart, &sectorOffset.HighPart,
 		FILE_BEGIN // Точка в файле, относительно которой необходимо позиционироваться (FILE_BEGIN, FILE_CURRENT, FILE_END)
 	);
-	bool readResult = ReadFile(fileHandle, dataBuffer, ClusterSize, &bytesRead, NULL);
+	DWORD bytesRead;
+	bool readResult = ReadFile(fileHandle, Buffer, ClusterSize, &bytesRead, NULL);
 	if (!readResult || bytesRead != ClusterSize)
 	{
 		cout << "Чтение данных выполнено с ошибкой" << endl;
@@ -24,7 +22,7 @@ void ReadCluster(HANDLE fileHandle, BYTE dataBuffer[], int ClusterSize) {
 int main()
 {
     setlocale(LC_ALL, "Russian");
-    const WCHAR *fileName = L"\\\\.\\E:";
+    const WCHAR *fileName = L"\\\\.\\F:";
 	HANDLE fileHandle = CreateFileW(
 		fileName, // Имя файла (WCHAR*)
 		GENERIC_READ,	  // Режим доступа
@@ -42,6 +40,14 @@ int main()
 	}
 	BYTE dataBuffer[512];
 	DWORD bytesToRead = 512;
+	DWORD bytesRead;
+	bool readResult = ReadFile(fileHandle, dataBuffer, bytesToRead, &bytesRead, NULL);
+	if (!readResult || bytesRead != bytesToRead)
+	{
+		cout << "Чтение данных выполнено с ошибкой" << endl;
+		CloseHandle(fileHandle);
+		return 2;
+	}
 	#pragma pack (push,1)
 	typedef struct
 	{
@@ -77,12 +83,18 @@ int main()
 	cout << "Число резервных секторов:" << pBootRecord->RsvdSecCount << endl;
 	cout << "Тип носителя:" << int(pBootRecord->MediaType) << endl;
 	cout << "Число таблиц(копий) FAT:" << int(pBootRecord->CountFAT) << endl;
-	int ClusterSize = pow(2, int(pBootRecord->SectorFactor)) * pow(2, pBootRecord->SectorPerCluster);
+	cout << "Сектор корневого каталога " << int(pBootRecord->RootCluster) << endl;
+	int ClusterSize = pBootRecord->SectorFactor * pBootRecord->SectorPerCluster;
+	cout << "Размер кластера: " << ClusterSize << endl;
 	BYTE* Buffer = new BYTE[ClusterSize];
-	ReadCluster(fileHandle, Buffer, ClusterSize);
+	int ClusterNumber;
+	cout << "Введите какой кластер необходимо считать" << endl;
+	cin >> ClusterNumber;
+	ULONGLONG startOffset = 65536 * pBootRecord->SectorFactor;
+	ReadCluster(fileHandle, Buffer, ClusterNumber, ClusterSize, startOffset);
 	for (int i = 0; i < ClusterSize; i++)
 	{
-		cout << hex << setw(2) << setfill('0') << uppercase << int(dataBuffer[i]) << " ";
+		cout << hex << setw(2) << setfill('0') << uppercase << int(Buffer[i]) << " ";
 		if ((i + 1) % 16 == 0)
 			cout << endl;
 	}
