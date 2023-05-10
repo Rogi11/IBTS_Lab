@@ -1,18 +1,25 @@
 ﻿#include <iostream>
 #include <Windows.h>
+#include <string>
+#include <iomanip>
+#include <cmath>
 using namespace std;
-void ReadCluster(HANDLE fileHandle) {
+void ReadCluster(HANDLE fileHandle, BYTE dataBuffer[], int ClusterSize) {
 	ULONGLONG startOffset = 0x0;
+	DWORD bytesRead;
 	cout << "Введите какой кластер необходимо считать" << endl;
 	cin >> startOffset;
 	LARGE_INTEGER sectorOffset;
 	sectorOffset.QuadPart = startOffset;
-	unsigned long currentPosition = SetFilePointer(
-		fileHandle,
-		sectorOffset.LowPart,
-		&sectorOffset.HighPart,
+	unsigned long currentPosition = SetFilePointer(fileHandle, sectorOffset.LowPart, &sectorOffset.HighPart,
 		FILE_BEGIN // Точка в файле, относительно которой необходимо позиционироваться (FILE_BEGIN, FILE_CURRENT, FILE_END)
 	);
+	bool readResult = ReadFile(fileHandle, dataBuffer, ClusterSize, &bytesRead, NULL);
+	if (!readResult || bytesRead != ClusterSize)
+	{
+		cout << "Чтение данных выполнено с ошибкой" << endl;
+		CloseHandle(fileHandle);
+	}
 }
 int main()
 {
@@ -35,21 +42,7 @@ int main()
 	}
 	BYTE dataBuffer[512];
 	DWORD bytesToRead = 512;
-	DWORD bytesRead;
-	bool readResult = ReadFile(
-		fileHandle,
-		dataBuffer,
-		bytesToRead,
-		&bytesRead,
-		NULL
-	);
-	if (!readResult || bytesRead != bytesToRead)
-	{
-		cout << "Чтение данных выполнено с ошибкой" << endl;
-		CloseHandle(fileHandle);
-		return 2;
-	}
-#pragma pack (push,1)
+	#pragma pack (push,1)
 	typedef struct
 	{
 		BYTE jmp[3];
@@ -84,7 +77,16 @@ int main()
 	cout << "Число резервных секторов:" << pBootRecord->RsvdSecCount << endl;
 	cout << "Тип носителя:" << int(pBootRecord->MediaType) << endl;
 	cout << "Число таблиц(копий) FAT:" << int(pBootRecord->CountFAT) << endl;
-
+	int ClusterSize = pow(2, int(pBootRecord->SectorFactor)) * pow(2, pBootRecord->SectorPerCluster);
+	BYTE* Buffer = new BYTE[ClusterSize];
+	ReadCluster(fileHandle, Buffer, ClusterSize);
+	for (int i = 0; i < ClusterSize; i++)
+	{
+		cout << hex << setw(2) << setfill('0') << uppercase << int(dataBuffer[i]) << " ";
+		if ((i + 1) % 16 == 0)
+			cout << endl;
+	}
+	delete[] Buffer;
 	CloseHandle(fileHandle);
 	return 0;
 }
